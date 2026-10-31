@@ -3,7 +3,9 @@
 #include <QFile>
 #include <QLocalServer>
 #include <QSignalSpy>
+#include <QRegularExpression>
 #include <QTemporaryDir>
+#include <QThread>
 #include <QUrl>
 #include <QtTest>
 
@@ -14,6 +16,21 @@ static QString make_file(const QTemporaryDir& folder, const QString& name)
 {
     const QString path = folder.filePath(name);
     return QFile(path).open(QIODevice::WriteOnly) ? path : QString();
+}
+
+// hand_over blocks until the listener answers, and the listener lives on this thread
+static bool hand_over_elsewhere(const QString& path, const QStringList& names)
+{
+    bool taken = false;
+    QThread *thread = QThread::create([&] { taken = SongInbox::hand_over(path, names); });
+    thread->start();
+    for (int waited_ms = 0; !thread->isFinished() && waited_ms < 5000; waited_ms += 10)
+    {
+        QTest::qWait(10);
+    }
+    thread->wait();
+    delete thread;
+    return taken;
 }
 
 static QVariantMap only_song(const QVariantList& songs)
@@ -96,8 +113,8 @@ void CheckOpening::handOverReachesListener()
     QVERIFY(inbox.listen(folder.filePath("inbox")));
     QSignalSpy opened(&inbox, &SongInbox::songsOpened);
 
-    QVERIFY(SongInbox::hand_over(folder.filePath("inbox"), {QUrl::fromLocalFile(path).toString()}));
-    QVERIFY(opened.wait(2000));
+    QVERIFY(hand_over_elsewhere(folder.filePath("inbox"), {QUrl::fromLocalFile(path).toString()}));
+    QTRY_COMPARE_WITH_TIMEOUT(opened.size(), 1, 2000);
     const QVariantMap song = only_song(opened.first().first().toList());
     QCOMPARE(QUrl(song.value("videoId").toString()).toLocalFile(), path);
 }
@@ -111,9 +128,9 @@ void CheckOpening::handOverKeepsEverySongInOrder()
     QVERIFY(inbox.listen(folder.filePath("inbox")));
     QSignalSpy opened(&inbox, &SongInbox::songsOpened);
 
-    QVERIFY(SongInbox::hand_over(folder.filePath("inbox"),
+    QVERIFY(hand_over_elsewhere(folder.filePath("inbox"),
         {QUrl::fromLocalFile(second).toString(), QUrl::fromLocalFile(first).toString()}));
-    QVERIFY(opened.wait(2000));
+    QTRY_COMPARE_WITH_TIMEOUT(opened.size(), 1, 2000);
     const QVariantList songs = opened.first().first().toList();
     QCOMPARE(songs.size(), 2);
     QCOMPARE(songs.at(0).toMap().value("title").toString(), QString("2"));
@@ -127,7 +144,7 @@ void CheckOpening::handOverDropsMissingFiles()
     QVERIFY(inbox.listen(folder.filePath("inbox")));
     QSignalSpy opened(&inbox, &SongInbox::songsOpened);
 
-    QVERIFY(SongInbox::hand_over(folder.filePath("inbox"), {"file:///no/such/song.mp3"}));
+    QVERIFY(hand_over_elsewhere(folder.filePath("inbox"), {"file:///no/such/song.mp3"}));
     QVERIFY(!opened.wait(300));
 }
 
@@ -138,6 +155,44 @@ void CheckOpening::secondListenerIsRefused()
     SongInbox second;
     QVERIFY(first.listen(folder.filePath("inbox")));
     QVERIFY(!second.listen(folder.filePath("inbox")));
+}
+
+void CheckOpening::handOverNeedsAnAnswer()
+{
+    QTemporaryDir folder;
+    QLocalServer silent;
+    QVERIFY(silent.listen(folder.filePath("inbox")));
+    QVERIFY(!hand_over_elsewhere(folder.filePath("inbox"), {"file:///a.mp3"}));
+}
+
+void CheckOpening::startLockKeepsOthersOut()
+{
+    QTemporaryDir folder;
+    StartLock first(folder.filePath("lock"));
+    QVERIFY(first.held());
+    StartLock second(folder.filePath("lock"), 100);
+    QVERIFY(!second.held());
+    first.release();
+    StartLock third(folder.filePath("lock"), 100);
+    QVERIFY(third.held());
+}
+
+void CheckOpening::startLockGoesWithItsHolder()
+{
+    QTemporaryDir folder;
+    {
+        StartLock first(folder.filePath("lock"));
+        QVERIFY(first.held());
+    }
+    StartLock second(folder.filePath("lock"), 100);
+    QVERIFY(second.held());
+}
+
+void CheckOpening::startLockFailsLoudlyOnBadPath()
+{
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("start lock failed"));
+    StartLock lock("/nonexistent/folder/lock", 100);
+    QVERIFY(!lock.held());
 }
 
 // a program that crashed leaves its socket file behind

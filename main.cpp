@@ -92,6 +92,7 @@ int main(int argc, char **argv)
     // the dock and panel match windows to apps by this
     QGuiApplication::setDesktopFileName(QStringLiteral("bandstand"));
 
+    StartLock start_lock(SongInbox::default_path() + QStringLiteral(".lock"));
     const QVariantList songs_to_open = local_songs(QCoreApplication::arguments().mid(1), QDir::currentPath());
     if (!songs_to_open.isEmpty() && SongInbox::hand_over(SongInbox::default_path(), urls_of(songs_to_open)))
     {
@@ -157,7 +158,6 @@ int main(int argc, char **argv)
     PlayQueue queue;
     queue.set_library(&library);
     SongInbox inbox;
-    inbox.listen(SongInbox::default_path());
 
     // a type rather than a context property, so qml can bind the playback state to it
     qmlRegisterType<MediaControls>("Bandstand", 1, 0, "MediaControls");
@@ -176,6 +176,9 @@ int main(int argc, char **argv)
             qPrintable(qml_directory));
         return 1;
     }
+
+    inbox.listen(SongInbox::default_path());
+    start_lock.release();
 
     return application.exec();
 }
