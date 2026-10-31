@@ -14,9 +14,11 @@
 #include <cstdlib>
 
 #include "library.hpp"
+#include "local-songs.hpp"
 #include "media-controls.hpp"
 #include "music-client.hpp"
 #include "play-queue.hpp"
+#include "song-inbox.hpp"
 
 static QString expanded(const QString& path)
 {
@@ -74,11 +76,27 @@ static void prepend_to_path_variable(const char *name, const QString& directory)
     qputenv(name, current.isEmpty() ? directory.toUtf8() : directory.toUtf8() + ':' + current);
 }
 
+static QStringList urls_of(const QVariantList& songs)
+{
+    QStringList urls;
+    for (const QVariant& song : songs)
+    {
+        urls.append(song.toMap().value(QStringLiteral("videoId")).toString());
+    }
+    return urls;
+}
+
 int main(int argc, char **argv)
 {
     QGuiApplication application(argc, argv);
     // the dock and panel match windows to apps by this
     QGuiApplication::setDesktopFileName(QStringLiteral("bandstand"));
+
+    const QVariantList songs_to_open = local_songs(QCoreApplication::arguments().mid(1), QDir::currentPath());
+    if (!songs_to_open.isEmpty() && SongInbox::hand_over(SongInbox::default_path(), urls_of(songs_to_open)))
+    {
+        return 0;
+    }
 
     const QVariantMap settings = read_settings();
 
@@ -138,6 +156,8 @@ int main(int argc, char **argv)
     Library library(folder);
     PlayQueue queue;
     queue.set_library(&library);
+    SongInbox inbox;
+    inbox.listen(SongInbox::default_path());
 
     // a type rather than a context property, so qml can bind the playback state to it
     qmlRegisterType<MediaControls>("Bandstand", 1, 0, "MediaControls");
@@ -147,6 +167,8 @@ int main(int argc, char **argv)
     engine.rootContext()->setContextProperty(QStringLiteral("client"), &client);
     engine.rootContext()->setContextProperty(QStringLiteral("queue"), &queue);
     engine.rootContext()->setContextProperty(QStringLiteral("library"), &library);
+    engine.rootContext()->setContextProperty(QStringLiteral("songInbox"), &inbox);
+    engine.rootContext()->setContextProperty(QStringLiteral("songsToOpen"), songs_to_open);
     engine.load(qml_directory + QStringLiteral("/Main.qml"));
     if (engine.rootObjects().isEmpty())
     {

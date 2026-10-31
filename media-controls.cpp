@@ -8,13 +8,14 @@
 #include <algorithm>
 #include <cstdio>
 
+#include "local-songs.hpp"
+
 static const QString OBJECT_PATH = QStringLiteral("/org/mpris/MediaPlayer2");
 static const QString SERVICE_NAME = QStringLiteral("org.mpris.MediaPlayer2.bandstand");
 static const QString PLAYER_INTERFACE = QStringLiteral("org.mpris.MediaPlayer2.Player");
 // mpris wants an object path per track; ours aren't real objects
 static const QString TRACK_PATH_PREFIX = QStringLiteral("/com/mavernix/bandstand/track/");
 static const QString NO_TRACK_PATH = QStringLiteral("/org/mpris/MediaPlayer2/TrackList/NoTrack");
-static const QString SONG_URL_PREFIX = QStringLiteral("https://music.youtube.com/watch?v=");
 
 static constexpr qint64 US_PER_MS = 1000;
 
@@ -202,8 +203,7 @@ QVariantMap MediaControls::metadata() const
     QVariantMap map{
         {QStringLiteral("mpris:trackid"), QVariant::fromValue(track_path())},
         {QStringLiteral("xesam:title"), current_track.value(QStringLiteral("title")).toString()},
-        // a local song's id is its file:// url already
-        {QStringLiteral("xesam:url"), video_id.startsWith(QLatin1String("file:")) ? video_id : SONG_URL_PREFIX + video_id},
+        {QStringLiteral("xesam:url"), song_url(video_id)},
     };
 
     const QString artist = current_track.value(QStringLiteral("artist")).toString();

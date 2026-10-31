@@ -21,6 +21,10 @@ meson compile -C build
 
 Start `build/bandstand` from a Mavernix session.
 
+To install a build of your own, keeping the App Store's yt-dlp, run `packaging/install-local`.
+
+Bandstand also opens audio files: give it their paths, or make it your default player. A file that's opened while Bandstand is running plays in that window.
+
 Your library lives in `~/.local/share/bandstand` as plain JSON files.
 
 Local Files lists the songs in your music folder (`~/Music`, or wherever your desktop's music folder is). To use other folders, set `local_folders` in the config's `[music]` table to a folder or a list of them. Local songs can be liked, added to playlists and queued like any other; Start Radio needs a song from YouTube Music. Their tags are read once and kept in `~/.cache/bandstand/local`, so the page opens quickly after the first time and picks up new or changed files on its own. Covers come from a `cover.jpg` or `folder.jpg` next to the songs, or else from a picture in the songs themselves. A song you move or rename is a new song to Bandstand.
