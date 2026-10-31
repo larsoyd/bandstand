@@ -19,6 +19,10 @@ class CheckOpening : public QObject
     void handOverReachesListener();
     void handOverKeepsEverySongInOrder();
     void handOverDropsMissingFiles();
+    void handOverNeedsAnAnswer();
     void secondListenerIsRefused();
+    void startLockKeepsOthersOut();
+    void startLockGoesWithItsHolder();
+    void startLockFailsLoudlyOnBadPath();
     void staleSocketIsReplaced();
 };
