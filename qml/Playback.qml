@@ -2,6 +2,7 @@
 
 import QtQuick
 import QtMultimedia
+import "Format.js" as Format
 
 Item {
     id: playback
@@ -57,11 +58,18 @@ Item {
         radioPending = false
         nowPlaying = song
         problem = ""
-        findingAudio = true
+        const local = Format.isLocalSong(song.videoId)
+        findingAudio = !local
         // clear the source too, otherwise play() during the lookup plays the previous song
         player.stop()
         player.source = ""
-        client.findAudio(song.videoId)
+        if (local) {
+            player.source = song.videoId
+            player.play()
+            prepareNext()
+        } else {
+            client.findAudio(song.videoId)
+        }
     }
 
     function stop() {
@@ -215,7 +223,8 @@ Item {
         const row = nextRow()
         if (row >= 0 && row !== queue.current) {
             const song = queue.trackAt(row)
-            if (song.videoId !== undefined) {
+            // a file plays straight away and the helper can't look it up
+            if (song.videoId !== undefined && !Format.isLocalSong(song.videoId)) {
                 client.prepareAudio(song.videoId)
             }
         }

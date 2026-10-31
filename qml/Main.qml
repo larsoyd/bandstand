@@ -103,6 +103,12 @@ Window {
         confirm(strings.confirm_clear_history, strings.action_clear_history, () => userLibrary.clearHistory())
     }
 
+    Component.onCompleted: {
+        if (songsToOpen.length > 0) {
+            playback.playItems(songsToOpen, 0)
+        }
+    }
+
     // --- controllers
 
     Playback {
@@ -113,6 +119,13 @@ Window {
         strings: window.strings
         onNotify: text => window.say(text)
         onJumped: positionMs => mediaControls.seeked(positionMs)
+    }
+
+    Connections {
+        target: songInbox
+        function onSongsOpened(songs) {
+            playback.playItems(songs, 0)
+        }
     }
 
     Navigation {

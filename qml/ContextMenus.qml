@@ -2,6 +2,7 @@
 // what a chosen item does is up to the window (the *Action signals).
 
 import QtQuick
+import "Format.js" as Format
 import "MenuItems.js" as MenuItems
 
 PopupMenu {
@@ -40,7 +41,8 @@ PopupMenu {
             playlists.push({ id: id, name: library.playlistName(id), has: library.playlistHas(id, song.videoId) })
         }
         const items = MenuItems.songMenu(strings, library.isLiked(song.videoId), library.isHidden(song), playlists,
-                                         removal === "playlist" && row < 0 ? "" : removal)
+                                         removal === "playlist" && row < 0 ? "" : removal,
+                                         !Format.isLocalSong(song.videoId))
         show(items, { kind: "song", song: song, row: row }, x, y)
     }
 

@@ -37,3 +37,8 @@ function clock(seconds) {
     }
     return m + ":" + ss
 }
+
+// a song from a file has its url for an id and needs no lookup
+function isLocalSong(videoId) {
+    return videoId.startsWith("file:")
+}

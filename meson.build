@@ -13,15 +13,15 @@ project(
 )
 
 qt = import('qt6')
-qt_modules = dependency('qt6', modules: ['Core', 'Gui', 'Qml', 'Quick', 'DBus'])
+qt_modules = dependency('qt6', modules: ['Core', 'Gui', 'Network', 'Qml', 'Quick', 'DBus'])
 
 # shared by the app and the tests
 logic_sources = [
     'track.cpp', 'card.cpp', 'track-model.cpp', 'card-model.cpp',
     'playlist-list.cpp', 'library.cpp', 'play-queue.cpp',
 ]
-program_sources = ['main.cpp', 'music-client.cpp', 'content-page.cpp', 'media-controls.cpp']
-program_headers = ['music-client.hpp', 'content-page.hpp', 'media-controls.hpp']
+program_sources = ['main.cpp', 'music-client.cpp', 'content-page.cpp', 'media-controls.cpp', 'local-songs.cpp', 'song-inbox.cpp']
+program_headers = ['music-client.hpp', 'content-page.hpp', 'media-controls.hpp', 'song-inbox.hpp']
 logic_headers = ['track-model.hpp', 'card-model.hpp', 'playlist-list.hpp', 'library.hpp', 'play-queue.hpp']
 
 moc_sources = qt.compile_moc(
@@ -67,4 +67,18 @@ if qt_test.found()
         dependencies: [qt_test],
     )
     test('library', check_library)
+endif
+
+qt_opening = dependency('qt6', modules: ['Core', 'Network', 'Test'], required: false)
+if qt_opening.found()
+    opening_moc = qt.compile_moc(
+        headers: ['tests/check-opening.hpp', 'song-inbox.hpp'],
+        dependencies: qt_opening,
+    )
+    check_opening = executable(
+        'check-opening',
+        ['tests/check-opening.cpp', 'local-songs.cpp', 'song-inbox.cpp', opening_moc],
+        dependencies: [qt_opening],
+    )
+    test('opening', check_opening)
 endif

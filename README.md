@@ -21,6 +21,10 @@ meson compile -C build
 
 Start `build/bandstand` from a Mavernix session.
 
+To install a build of your own, keeping the App Store's yt-dlp, run `packaging/install-local`.
+
+Bandstand also opens audio files: give it their paths, or make it your default player. A file that's opened while Bandstand is running plays in that window.
+
 Your library lives in `~/.local/share/bandstand` as plain JSON files.
 
 Right-click a song for what you can do with it. On Home's Recently Played shelf and in History, that includes Remove from History. Don't Suggest This Song keeps a song off Home's shelves and out of History, and Up Next skips it unless you pick it yourself; Liked Songs and your playlists keep it. Search finds it still, and right-clicking it there offers Suggest This Song Again. Hidden songs are listed in `hidden.json`.

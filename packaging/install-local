@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Builds this tree into ~/.local/opt/bandstand and makes it the Bandstand the
+# desktop starts. yt-dlp and friends stay the App Store's, so its updates reach
+# this build. Its desktop entry isn't marked as the store's, so the store keeps
+# its hands off it.
+set -euo pipefail
+
+source=$(cd "$(dirname "$0")/.." && pwd)
+data=${XDG_DATA_HOME:-$HOME/.local/share}
+store_app=$data/mavernix/apps/bandstand
+prefix=$HOME/.local/opt/bandstand
+entry=$data/applications/bandstand.desktop
+
+if [[ ! -d $store_app/bundle/lib/bandstand ]]; then
+    echo "refused: get Bandstand from the App Store first, its yt-dlp is used" >&2
+    exit 1
+fi
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+timeout 60 meson setup "$work/build" "$source" --prefix="$prefix" --buildtype=release >/dev/null
+timeout 600 meson compile -C "$work/build" >/dev/null
+timeout 60 meson install -C "$work/build" >/dev/null
+ln -sfn "$store_app/bundle/lib/bandstand" "$prefix/lib/bandstand"
+
+sed -e "s|^Exec=.*|Exec=$prefix/bin/bandstand %U|" \
+    -e "s|^Icon=.*|Icon=$prefix/share/icons/hicolor/scalable/apps/bandstand.svg|" \
+    "$source/data/bandstand.desktop" > "$entry.new"
+mv "$entry.new" "$entry"
+echo "[install-local] prefix=$prefix entry=$entry"
