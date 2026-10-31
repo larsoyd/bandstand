@@ -21,6 +21,7 @@ trap 'rm -rf "$work"' EXIT
 timeout 60 meson setup "$work/build" "$source" --prefix="$prefix" --buildtype=release >/dev/null
 timeout 600 meson compile -C "$work/build" >/dev/null
 timeout 60 meson install -C "$work/build" >/dev/null
+mkdir -p "$prefix/lib"
 ln -sfn "$store_app/bundle/lib/bandstand" "$prefix/lib/bandstand"
 
 sed -e "s|^Exec=.*|Exec=$prefix/bin/bandstand %U|" \
