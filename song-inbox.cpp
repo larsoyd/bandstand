@@ -128,7 +128,7 @@ void SongInbox::read_names(QLocalSocket *socket)
     const QString names = QString::fromUtf8(socket->readAll());
     socket->write("ok\n");
     socket->flush();
-    const QVariantList songs = local_songs(names.split(QLatin1Char('\n'), Qt::SkipEmptyParts), QDir::homePath());
+    const QVariantList songs = local_songs(names.split(QLatin1Char('\n')), QDir::homePath());
     if (!songs.isEmpty())
     {
         emit songsOpened(songs);
