@@ -44,6 +44,9 @@ class FakeMusic:
     def radio(self, video_id):
         return self._call("radio", video_id)
 
+    def radio_like(self, query):
+        return self._call("radio_like", query)
+
 
 class FakeStreams:
     def __init__(self, result=None, error=None, block_on=None):
@@ -114,6 +117,7 @@ class HandleTest(unittest.TestCase):
             ("artist", {"browse_id": "UC1"}, ("artist", "UC1")),
             ("playlist", {"browse_id": "VLPL1"}, ("playlist", "VLPL1")),
             ("radio", {"video_id": "abc"}, ("radio", "abc")),
+            ("radio_like", {"query": "Ane Blå"}, ("radio_like", "Ane Blå")),
             ("home", {}, ("home",)),
         ]:
             with self.subTest(command=command):
@@ -147,7 +151,7 @@ class HandleTest(unittest.TestCase):
     def test_missing_or_empty_args_rejected(self):
         for command, name in [
             ("search", "query"), ("stream", "video_id"), ("prepare", "video_id"), ("album", "browse_id"),
-            ("artist", "browse_id"), ("playlist", "browse_id"), ("radio", "video_id"),
+            ("artist", "browse_id"), ("playlist", "browse_id"), ("radio", "video_id"), ("radio_like", "query"),
         ]:
             for value in (None, "", "   ", 5):
                 with self.subTest(command=command, value=value):

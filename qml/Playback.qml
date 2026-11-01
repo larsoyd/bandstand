@@ -66,6 +66,7 @@ Item {
         if (local) {
             player.source = song.videoId
             player.play()
+            library.recordPlayed(song)
             prepareNext()
         } else {
             client.findAudio(song.videoId)
@@ -237,7 +238,11 @@ Item {
     function startRadio(song) {
         radioPending = true
         notify(strings.status_radio)
-        client.startRadio(song.videoId)
+        if (Format.isLocalSong(song.videoId)) {
+            client.startRadioLike(song.videoId, Format.searchTextOf(song))
+        } else {
+            client.startRadio(song.videoId)
+        }
     }
 
     Connections {

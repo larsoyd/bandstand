@@ -46,6 +46,7 @@ REQUIRED_ARGS = {
     "artist": ("browse_id",),
     "playlist": ("browse_id",),
     "radio": ("video_id",),
+    "radio_like": ("query",),
     "home": (),
 }
 
@@ -94,6 +95,8 @@ class Helper:
             return self._music.playlist(request["browse_id"])
         if command == "radio":
             return self._music.radio(request["video_id"])
+        if command == "radio_like":
+            return self._music.radio_like(request["query"])
         return self._music.home()
 
 

@@ -50,6 +50,8 @@ class MusicClient : public QObject
     // pages are cached and only re-requested when they failed or went stale.
     Q_INVOKABLE ContentPage *page(const QString& kind, const QString& browse_id);
     Q_INVOKABLE void startRadio(const QString& video_id);
+    // for a song with no id of its own, starts from the closest one found
+    Q_INVOKABLE void startRadioLike(const QString& video_id, const QString& query);
 
   signals:
     void searchingChanged();

@@ -1,7 +1,9 @@
 #include "check-opening.hpp"
 
 #include <QFile>
+#include <QImage>
 #include <QLocalServer>
+#include <QProcess>
 #include <QSignalSpy>
 #include <QRegularExpression>
 #include <QTemporaryDir>
@@ -11,11 +13,51 @@
 
 #include "../local-songs.hpp"
 #include "../song-inbox.hpp"
+#include "../window-focus.hpp"
 
 static QString make_file(const QTemporaryDir& folder, const QString& name)
 {
     const QString path = folder.filePath(name);
     return QFile(path).open(QIODevice::WriteOnly) ? path : QString();
+}
+
+// real encoded files, so the tags are read the way they are from a user's music
+static QString make_tagged(const QTemporaryDir& folder, const QString& name, bool with_cover)
+{
+    const QString cover = folder.filePath("source.png");
+    QStringList arguments{"-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=3"};
+    if (with_cover)
+    {
+        QImage(16, 16, QImage::Format_RGB32).save(cover);
+        arguments << "-i" << cover << "-map" << "0" << "-map" << "1" << "-c:v" << "png" << "-disposition:v" << "attached_pic";
+    }
+    const QString path = folder.filePath(name);
+    arguments << "-metadata" << "title=Blå Time" << "-metadata" << "artist=Ane" << "-metadata" << "album=Sjø" << path;
+    QProcess ffmpeg;
+    ffmpeg.start("ffmpeg", arguments);
+    ffmpeg.waitForFinished(20000);
+    if (ffmpeg.exitCode() != 0)
+    {
+        qWarning("[check-opening] ffmpeg failed: %s", ffmpeg.readAllStandardError().constData());
+        return {};
+    }
+    QFile::remove(cover);
+    return path;
+}
+
+static void compare_tags(const QVariantMap& song)
+{
+    QCOMPARE(song.value("title").toString(), QString("Blå Time"));
+    QCOMPARE(song.value("artist").toString(), QString("Ane"));
+    QCOMPARE(song.value("album").toString(), QString("Sjø"));
+    QCOMPARE(song.value("durationSeconds").toInt(), 3);
+}
+
+static void write_message(QLocalSocket *socket, const QByteArray& body)
+{
+    const quint32 length = qToLittleEndian<quint32>(body.size());
+    socket->write(reinterpret_cast<const char *>(&length), sizeof length);
+    socket->write(body);
 }
 
 // hand_over blocks until the listener answers, and the listener lives on this thread
@@ -203,6 +245,122 @@ void CheckOpening::staleSocketIsReplaced()
     SongInbox inbox;
     QVERIFY(!SongInbox::hand_over(path, {"file:///a.mp3"}));
     QVERIFY(inbox.listen(path));
+}
+
+void CheckOpening::tagsReplaceTheFileName_data()
+{
+    QTest::addColumn<QString>("name");
+    QTest::newRow("mp3") << "a.mp3";
+    QTest::newRow("flac") << "a.flac";
+    QTest::newRow("ogg") << "a.ogg";
+    QTest::newRow("m4a") << "a.m4a";
+}
+
+void CheckOpening::tagsReplaceTheFileName()
+{
+    QFETCH(QString, name);
+    QTemporaryDir folder;
+    const QString path = make_tagged(folder, name, false);
+    QVERIFY(!path.isEmpty());
+    compare_tags(only_song(local_songs({path}, "/", folder.filePath("covers"))));
+}
+
+void CheckOpening::fileWithoutTagsKeepsItsName()
+{
+    QTemporaryDir folder;
+    const QString path = folder.filePath("Bare.flac");
+    QProcess ffmpeg;
+    ffmpeg.start("ffmpeg", {"-v", "error", "-f", "lavfi", "-i", "sine=duration=2", "-map_metadata", "-1", path});
+    QVERIFY(ffmpeg.waitForFinished(20000) && ffmpeg.exitCode() == 0);
+    const QVariantMap song = only_song(local_songs({path}, "/", folder.filePath("covers")));
+    QCOMPARE(song.value("title").toString(), QString("Bare"));
+    QCOMPARE(song.value("artist").toString(), QString());
+    QCOMPARE(song.value("durationSeconds").toInt(), 2);
+}
+
+void CheckOpening::embeddedCoverBecomesAFile_data()
+{
+    QTest::addColumn<QString>("name");
+    QTest::newRow("mp3") << "a.mp3";
+    QTest::newRow("flac") << "a.flac";
+    QTest::newRow("m4a") << "a.m4a";
+}
+
+void CheckOpening::embeddedCoverBecomesAFile()
+{
+    QFETCH(QString, name);
+    QTemporaryDir folder;
+    const QString path = make_tagged(folder, name, true);
+    QVERIFY(!path.isEmpty());
+    const QVariantMap song = only_song(local_songs({path}, "/", folder.filePath("covers")));
+    const QImage cover(QUrl(song.value("thumbnailUrl").toString()).toLocalFile());
+    QCOMPARE(cover.size(), QSize(16, 16));
+}
+
+void CheckOpening::folderCoverIsTheFallback()
+{
+    QTemporaryDir folder;
+    const QString path = make_tagged(folder, "a.flac", false);
+    QVERIFY(!path.isEmpty());
+    const QString picture = folder.filePath("Cover.JPG");
+    QVERIFY(QImage(8, 8, QImage::Format_RGB32).save(picture, "JPG"));
+    const QVariantMap song = only_song(local_songs({path}, "/", folder.filePath("covers")));
+    QCOMPARE(song.value("thumbnailUrl").toString(), QUrl::fromLocalFile(picture).toString());
+}
+
+void CheckOpening::fileNamedLikeAudioButIsNotIsStillListed()
+{
+    QTemporaryDir folder;
+    const QString path = make_file(folder, "empty.mp3");
+    const QVariantMap song = only_song(local_songs({path}, "/", folder.filePath("covers")));
+    QCOMPARE(song.value("title").toString(), QString("empty"));
+    QCOMPARE(song.value("thumbnailUrl").toString(), QString());
+}
+
+void CheckOpening::ownViewIsFoundInTheList()
+{
+    const QByteArray views = R"([
+        {"id": 1, "pid": 7, "role": "toplevel", "mapped": true},
+        {"id": 2, "pid": 9, "role": "desktop-environment", "mapped": true},
+        {"id": 3, "pid": 9, "role": "toplevel", "mapped": false},
+        {"id": 4, "pid": 9, "role": "toplevel", "mapped": true}])";
+    QCOMPARE(own_view_id(views, 9), 4);
+    QCOMPARE(own_view_id(views, 8), -1);
+    QCOMPARE(own_view_id("not json", 9), -1);
+}
+
+void CheckOpening::focusAsksForTheOwnView()
+{
+    QTemporaryDir folder;
+    QLocalServer compositor;
+    QVERIFY(compositor.listen(folder.filePath("wayfire.socket")));
+    QByteArray seen;
+    connect(&compositor, &QLocalServer::newConnection, this, [&] {
+        QLocalSocket *socket = compositor.nextPendingConnection();
+        connect(socket, &QLocalSocket::readyRead, this, [&seen, socket] {
+            const QByteArray message = socket->readAll().mid(4);
+            seen += message + '\n';
+            write_message(socket, message.contains("list-views")
+                ? QByteArray(R"([{"id": 42, "pid": )") + QByteArray::number(QCoreApplication::applicationPid())
+                    + R"(, "role": "toplevel", "mapped": true}])"
+                : QByteArray(R"({"result": "ok"})"));
+        });
+    });
+    bool focused = false;
+    QThread *thread = QThread::create([&] { focused = focus_own_window(compositor.fullServerName()); });
+    thread->start();
+    QTRY_VERIFY_WITH_TIMEOUT(thread->isFinished(), 3000);
+    delete thread;
+    QVERIFY(focused);
+    QVERIFY2(seen.contains("window-rules/focus-view") && seen.contains("\"id\":42"), seen.constData());
+}
+
+void CheckOpening::focusWithoutCompositorIsARefusal()
+{
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("focus failed reason=no_compositor"));
+    QVERIFY(!focus_own_window("/nonexistent/wayfire.socket"));
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("focus failed reason=no_compositor"));
+    QVERIFY(!focus_own_window(""));
 }
 
 QTEST_GUILESS_MAIN(CheckOpening)

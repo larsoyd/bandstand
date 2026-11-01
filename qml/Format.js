@@ -42,3 +42,7 @@ function clock(seconds) {
 function isLocalSong(videoId) {
     return videoId.startsWith("file:")
 }
+
+function searchTextOf(song) {
+    return (song.artist + " " + song.title).trim()
+}
