@@ -37,3 +37,12 @@ function clock(seconds) {
     }
     return m + ":" + ss
 }
+
+// a song from a file has its url for an id
+function isLocalSong(videoId) {
+    return videoId.startsWith("file:")
+}
+
+function searchTextOf(song) {
+    return (song.artist + " " + song.title).trim()
+}

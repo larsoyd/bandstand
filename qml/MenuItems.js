@@ -46,8 +46,7 @@ function find(items, id) {
 // playlists: [{ id, name, has }], has = the song is already in it
 // removal: "playlist", "history" or "" for what the current page lets you remove from
 // hidden: the song isn't suggested (Library.isHidden)
-// radio: a radio can start from it, which only youtube songs can
-function songMenu(strings, liked, hidden, playlists, removal, radio) {
+function songMenu(strings, liked, hidden, playlists, removal) {
     const playlistItems = [item("newPlaylist", strings.menu_new_playlist), separator()]
     for (const playlist of playlists) {
         playlistItems.push(item("toPlaylist", playlist.name, {
@@ -61,11 +60,9 @@ function songMenu(strings, liked, hidden, playlists, removal, radio) {
         item("queue", strings.menu_add_to_queue),
         separator(),
         item("like", liked ? strings.menu_unlike : strings.menu_like),
-        item("", strings.menu_add_to_playlist, { children: playlistItems })
+        item("", strings.menu_add_to_playlist, { children: playlistItems }),
+        item("radio", strings.menu_start_radio)
     ]
-    if (radio) {
-        items.push(item("radio", strings.menu_start_radio))
-    }
     items.push(separator())
     if (removal === "playlist") {
         items.push(item("remove", strings.menu_remove_playlist))

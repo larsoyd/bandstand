@@ -50,6 +50,7 @@ REQUIRED_ARGS = {
     "artist": ("browse_id",),
     "playlist": ("browse_id",),
     "radio": ("video_id",),
+    "radio_like": ("query",),
     "home": (),
     "local": (),
 }
@@ -104,6 +105,8 @@ class Helper:
             if self._local is None:
                 raise HelperError("No music folders are set.")
             return self._local.songs()
+        if command == "radio_like":
+            return self._music.radio_like(request["query"])
         return self._music.home()
 
 

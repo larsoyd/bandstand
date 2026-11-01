@@ -52,6 +52,8 @@ class MusicClient : public QObject
     Q_INVOKABLE ContentPage *page(const QString& kind, const QString& browse_id);
     // local songs never reach the helper; startRadio() fails for them
     Q_INVOKABLE void startRadio(const QString& video_id);
+    // for a song with no id of its own, starts from the closest one found
+    Q_INVOKABLE void startRadioLike(const QString& video_id, const QString& query);
 
     // a song from the music folders (the "local" page), whose id is its file:// url
     static bool is_local(const QString& video_id);

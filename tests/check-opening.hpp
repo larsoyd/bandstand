@@ -25,4 +25,16 @@ class CheckOpening : public QObject
     void startLockGoesWithItsHolder();
     void startLockFailsLoudlyOnBadPath();
     void staleSocketIsReplaced();
+
+    void tagsReplaceTheFileName_data();
+    void tagsReplaceTheFileName();
+    void fileWithoutTagsKeepsItsName();
+    void embeddedCoverBecomesAFile_data();
+    void embeddedCoverBecomesAFile();
+    void folderCoverIsTheFallback();
+    void fileNamedLikeAudioButIsNotIsStillListed();
+
+    void ownViewIsFoundInTheList();
+    void focusAsksForTheOwnView();
+    void focusWithoutCompositorIsARefusal();
 };

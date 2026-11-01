@@ -247,3 +247,10 @@ class YouTubeMusic:
     def radio(self, video_id):
         page = self._call(lambda api: api.get_watch_playlist(videoId=video_id, radio=True, limit=SEARCH_LIMIT))
         return {"tracks": parse_tracks(page.get("tracks"))}
+
+    def radio_like(self, query):
+        """A radio from the closest song, for music that isn't on YouTube Music by id."""
+        tracks = self.search(query)["tracks"]
+        if not tracks:
+            raise HelperError('nothing like "%s" on YouTube Music' % query)
+        return self.radio(tracks[0]["video_id"])

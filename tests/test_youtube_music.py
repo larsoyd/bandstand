@@ -251,6 +251,19 @@ class YouTubeMusicTest(unittest.TestCase):
         self.assertEqual(len(result["tracks"]), 2)
         self.assertEqual(api.calls[0][2]["radio"], True)
 
+    def test_radio_like_starts_from_the_closest_song(self):
+        api = FakeApi(search=[SEARCH_SONG], get_watch_playlist={"tracks": [RADIO_TRACK]})
+        result = make_music(api).radio_like("Radiohead Creep")
+        self.assertEqual(len(result["tracks"]), 1)
+        self.assertEqual(api.calls[0][1], ("Radiohead Creep",))
+        self.assertEqual(api.calls[-1][1], (SEARCH_SONG["videoId"],))
+
+    def test_radio_like_without_a_match_is_an_error(self):
+        api = FakeApi(search=[])
+        with self.assertRaises(youtube_music.HelperError):
+            make_music(api).radio_like("nothing like it")
+        self.assertEqual([call[0] for call in api.calls if call[0] == "get_watch_playlist"], [])
+
 
 class RetryTest(unittest.TestCase):
     def test_retries_empty_page(self):

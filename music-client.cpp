@@ -161,6 +161,17 @@ void MusicClient::startRadio(const QString& video_id)
     send({{"command", "radio"}, {"video_id", video_id}}, {Kind::Radio, video_id, {}, nullptr});
 }
 
+void MusicClient::startRadioLike(const QString& video_id, const QString& query)
+{
+    const QString error = start_helper();
+    if (!error.isEmpty())
+    {
+        emit radioFailed(video_id, error);
+        return;
+    }
+    send({{"command", "radio_like"}, {"query", query}}, {Kind::Radio, video_id, {}, nullptr});
+}
+
 ContentPage *MusicClient::page(const QString& kind, const QString& browse_id)
 {
     const QString key = kind + QLatin1Char(':') + browse_id;

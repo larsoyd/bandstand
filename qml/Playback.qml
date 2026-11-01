@@ -2,6 +2,7 @@
 
 import QtQuick
 import QtMultimedia
+import "Format.js" as Format
 
 Item {
     id: playback
@@ -228,7 +229,11 @@ Item {
     function startRadio(song) {
         radioPending = true
         notify(strings.status_radio)
-        client.startRadio(song.videoId)
+        if (Format.isLocalSong(song.videoId)) {
+            client.startRadioLike(song.videoId, Format.searchTextOf(song))
+        } else {
+            client.startRadio(song.videoId)
+        }
     }
 
     Connections {

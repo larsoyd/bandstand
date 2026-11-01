@@ -19,6 +19,7 @@
 #include "music-client.hpp"
 #include "play-queue.hpp"
 #include "song-inbox.hpp"
+#include "window-focus.hpp"
 
 static QString expanded(const QString& path)
 {
@@ -177,6 +178,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    QObject::connect(&inbox, &SongInbox::songsOpened, &application,
+                     [] { focus_own_window(qEnvironmentVariable("WAYFIRE_SOCKET")); });
     inbox.listen(SongInbox::default_path());
     start_lock.release();
 
