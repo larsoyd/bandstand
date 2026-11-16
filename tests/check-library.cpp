@@ -689,4 +689,36 @@ void CheckLibrary::hiddenSongsSurviveReload()
     QCOMPARE(ids_of(again.history()), QString("a"));
 }
 
+void CheckLibrary::fileIdsWrittenAnotherWayAreReadAsOne()
+{
+    QTemporaryDir directory;
+    const QString id = "file:///music/a%20b/Bj%C3%B6rk%20%28live%29.mp3";
+    const QString printed = QString::fromUtf8("file:///music/a b/Björk (live).mp3");
+    auto tracks = [](const QStringList& ids)
+    {
+        QJsonArray array;
+        for (const QString& each : ids)
+        {
+            array.append(QJsonObject{{"video_id", each}, {"title", "Song"}, {"artist", "Artist"}});
+        }
+        return QJsonDocument(QJsonObject{{"tracks", array}}).toJson();
+    };
+    QFile history(directory.filePath("history.json"));
+    QVERIFY(history.open(QIODevice::WriteOnly) && history.write(tracks({"x", printed, id, "y"})) > 0);
+    history.close();
+    QFile liked(directory.filePath("liked.json"));
+    QVERIFY(liked.open(QIODevice::WriteOnly) && liked.write(tracks({printed})) > 0);
+    liked.close();
+
+    Library library(directory.path());
+    QCOMPARE(library.history()->rowCount(), 3);
+    QCOMPARE(library.history()->trackAt(1).value("videoId").toString(), id);
+    QCOMPARE(library.history()->trackAt(2).value("videoId").toString(), QString("y"));
+    QVERIFY(library.isLiked(id));
+
+    library.recordPlayed(library.history()->trackAt(1));
+    QCOMPARE(library.history()->rowCount(), 3);
+    QCOMPARE(library.history()->trackAt(0).value("videoId").toString(), id);
+}
+
 QTEST_GUILESS_MAIN(CheckLibrary)

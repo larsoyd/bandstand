@@ -1,5 +1,7 @@
 #include "track.hpp"
 
+#include <QUrl>
+
 namespace
 {
 // the same fields under the helper's names and under qml's
@@ -16,10 +18,16 @@ struct Keys
 const Keys helper_keys{"video_id", "title", "artist", "album", "duration_seconds", "thumbnail_url"};
 const Keys qml_keys{"videoId", "title", "artist", "album", "durationSeconds", "thumbnailUrl"};
 
+// a file's url can be spelled several ways and only one is its id
+QString one_spelling(const QString& id)
+{
+    return id.startsWith(QLatin1String("file:")) ? Track::file_id(QUrl(id).toLocalFile()) : id;
+}
+
 Track read(const QVariantMap& map, const Keys& keys)
 {
     Track track;
-    track.video_id = map.value(keys.video_id).toString();
+    track.video_id = one_spelling(map.value(keys.video_id).toString());
     track.title = map.value(keys.title).toString();
     track.artist = map.value(keys.artist).toString();
     track.album = map.value(keys.album).toString();
@@ -28,6 +36,11 @@ Track read(const QVariantMap& map, const Keys& keys)
     return track;
 }
 } // namespace
+
+QString Track::file_id(const QString& path)
+{
+    return QStringLiteral("file://") + QString::fromLatin1(QUrl::toPercentEncoding(path, "/"));
+}
 
 Track Track::from_helper(const QVariantMap& map)
 {

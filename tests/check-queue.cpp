@@ -70,6 +70,30 @@ void CheckQueue::trackNeedsVideoId()
     QVERIFY(Track::from_helper(helper_song("x")).is_valid());
 }
 
+void CheckQueue::fileSongHasOneIdHoweverItIsWritten_data()
+{
+    QTest::addColumn<QString>("written");
+    QTest::addColumn<QString>("id");
+    const QString odd = "file:///music/a%20b/Bj%C3%B6rk%20%28live%29%20%5B2014%5D%20%231%20100%25%20%2B%26%2C%3B%3D%27%21~%3F%40%24%2A.mp3";
+    QTest::newRow("as the folder scan writes it") << odd << odd;
+    QTest::newRow("as qt prints a file url")
+        << QString::fromUtf8("file:///music/a b/Björk (live) %5B2014%5D %231 100%25 +&,;='!~%3F@$*.mp3") << odd;
+    QTest::newRow("sub delimiters left alone")
+        << QString::fromUtf8("file:///music/a%20b/Bj%C3%B6rk%20(live)%20%5B2014%5D%20%231%20100%25%20+&,;='!~%3F@$*.mp3") << odd;
+    QTest::newRow("other scripts") << QString::fromUtf8("file:///music/皇后大道東 (feat. 蔣志光).mp3")
+        << "file:///music/%E7%9A%87%E5%90%8E%E5%A4%A7%E9%81%93%E6%9D%B1%20%28feat.%20%E8%94%A3%E5%BF%97%E5%85%89%29.mp3";
+    QTest::newRow("plain") << "file:///music/a.mp3" << "file:///music/a.mp3";
+    QTest::newRow("not a file") << "dQw4w9WgXcQ" << "dQw4w9WgXcQ";
+}
+
+void CheckQueue::fileSongHasOneIdHoweverItIsWritten()
+{
+    QFETCH(QString, written);
+    QFETCH(QString, id);
+    QCOMPARE(Track::from_helper({{"video_id", written}}).video_id, id);
+    QCOMPARE(Track::from_qml({{"videoId", written}}).video_id, id);
+}
+
 void CheckQueue::setTracksDropsSongsWithoutId()
 {
     TrackModel results;

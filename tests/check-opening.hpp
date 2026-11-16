@@ -11,6 +11,7 @@ class CheckOpening : public QObject
     void pathBecomesSong();
     void relativePathStartsAtFolder();
     void spacesAndUnicodeSurvive();
+    void openedFileGetsTheIdTheFolderScanGives();
     void orderIsKept();
     void missingFolderAndRemoteAreLeftOut();
     void songUrlIsTheFileOrItsPage();

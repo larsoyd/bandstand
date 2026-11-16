@@ -11,6 +11,8 @@
 #include <taglib/fileref.h>
 #include <taglib/tvariant.h>
 
+#include "track.hpp"
+
 static QString text_of(const TagLib::String& text)
 {
     return QString::fromStdString(text.to8Bit(true)).trimmed();
@@ -51,7 +53,7 @@ static QString folder_cover(const QFileInfo& file)
 static QVariantMap song_of(const QFileInfo& file, const QString& covers)
 {
     QVariantMap song{
-        {QStringLiteral("videoId"), QUrl::fromLocalFile(file.filePath()).toString()},
+        {QStringLiteral("videoId"), Track::file_id(file.filePath())},
         {QStringLiteral("title"), file.completeBaseName()},
         {QStringLiteral("artist"), QString()},
         {QStringLiteral("album"), QString()},

@@ -85,7 +85,7 @@ void CheckOpening::fileUrlBecomesSong()
     QTemporaryDir folder;
     const QString path = make_file(folder, "Moonlit Cartography.flac");
     const QVariantMap song = only_song(local_songs({QUrl::fromLocalFile(path).toString()}, "/"));
-    QCOMPARE(song.value("videoId").toString(), QUrl::fromLocalFile(path).toString());
+    QCOMPARE(song.value("videoId").toString(), "file://" + folder.path() + "/Moonlit%20Cartography.flac");
     QCOMPARE(song.value("title").toString(), QString("Moonlit Cartography"));
     QCOMPARE(song.value("durationSeconds").toInt(), 0);
 }
@@ -112,6 +112,16 @@ void CheckOpening::spacesAndUnicodeSurvive()
     const QVariantMap song = only_song(local_songs({path}, "/"));
     QCOMPARE(QUrl(song.value("videoId").toString()).toLocalFile(), path);
     QCOMPARE(song.value("title").toString(), QStringLiteral("blå bær #1 100%"));
+}
+
+void CheckOpening::openedFileGetsTheIdTheFolderScanGives()
+{
+    QTemporaryDir folder;
+    const QString path = make_file(folder, QStringLiteral("blå bær (live) #1 100%.opus"));
+    const QString id = "file://" + folder.path() + "/bl%C3%A5%20b%C3%A6r%20%28live%29%20%231%20100%25.opus";
+    QCOMPARE(only_song(local_songs({path}, "/")).value("videoId").toString(), id);
+    QCOMPARE(only_song(local_songs({QUrl::fromLocalFile(path).toString()}, "/")).value("videoId").toString(), id);
+    QCOMPARE(only_song(local_songs({id}, "/")).value("videoId").toString(), id);
 }
 
 void CheckOpening::orderIsKept()

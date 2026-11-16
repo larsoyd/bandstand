@@ -11,6 +11,8 @@ class CheckQueue : public QObject
     void trackNeedsVideoId();
     void setTracksDropsSongsWithoutId();
     void totalSeconds();
+    void fileSongHasOneIdHoweverItIsWritten_data();
+    void fileSongHasOneIdHoweverItIsWritten();
 
     void playFromQueuesWholeList();
     void playFromBadRowDoesNothing();

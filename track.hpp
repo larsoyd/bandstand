@@ -26,6 +26,9 @@ struct Track
     int duration_seconds = 0;
     QString thumbnail_url;
 
+    // the id of a song in a file, its url as the helper writes it
+    static QString file_id(const QString& path);
+
     static Track from_helper(const QVariantMap& map);
     static Track from_qml(const QVariantMap& map);
     QVariantMap to_helper() const;

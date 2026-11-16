@@ -78,7 +78,7 @@ if qt_opening.found()
     )
     check_opening = executable(
         'check-opening',
-        ['tests/check-opening.cpp', 'local-songs.cpp', 'song-inbox.cpp', 'window-focus.cpp', opening_moc],
+        ['tests/check-opening.cpp', 'local-songs.cpp', 'song-inbox.cpp', 'window-focus.cpp', 'track.cpp', opening_moc],
         dependencies: [qt_opening, taglib],
     )
     test('opening', check_opening)

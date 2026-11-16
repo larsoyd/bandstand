@@ -67,6 +67,16 @@ class LocalMusicTest(unittest.TestCase):
         }])
         self.assertEqual(result["folders"], [self.music])
 
+    # the app writes the same id for a file opened from the file manager
+    def test_file_url_is_percent_encoded(self):
+        self.add("a b/Björk (live) [2014] #1 100% +&,;='!~?@$*.mp3")
+        self.add("皇后大道東 (feat. 蔣志光).mp3")
+        ids = sorted(track["video_id"].removeprefix(pathlib.Path(self.music).as_uri()) for track in self.scan(FakeReader())["tracks"])
+        self.assertEqual(ids, [
+            "/%E7%9A%87%E5%90%8E%E5%A4%A7%E9%81%93%E6%9D%B1%20%28feat.%20%E8%94%A3%E5%BF%97%E5%85%89%29.mp3",
+            "/a%20b/Bj%C3%B6rk%20%28live%29%20%5B2014%5D%20%231%20100%25%20%2B%26%2C%3B%3D%27%21~%3F%40%24%2A.mp3",
+        ])
+
     def test_only_audio_files_and_no_hidden_ones(self):
         self.add("a.mp3")
         self.add("notes.txt")

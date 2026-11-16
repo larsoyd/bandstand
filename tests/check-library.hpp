@@ -39,4 +39,5 @@ class CheckLibrary : public QObject
     void unwritableFolderIsReported();
     void failedWriteIsRetried();
     void hiddenSongsSurviveReload();
+    void fileIdsWrittenAnotherWayAreReadAsOne();
 };

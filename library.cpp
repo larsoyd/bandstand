@@ -34,6 +34,23 @@ static QJsonArray to_json(const Model& model)
     return array;
 }
 
+// each song once, as two spellings of a file's id are read as one
+static QVector<Track> songs_of(const QVariantList& helper_tracks)
+{
+    QVector<Track> songs;
+    QSet<QString> seen;
+    for (const QVariant& entry : helper_tracks)
+    {
+        const Track track = Track::from_helper(entry.toMap());
+        if (!seen.contains(track.video_id))
+        {
+            seen.insert(track.video_id);
+            songs.append(track);
+        }
+    }
+    return songs;
+}
+
 static int index_of_song(const TrackModel& tracks, const QString& video_id)
 {
     const QVector<Track>& all = tracks.all();
@@ -355,9 +372,9 @@ void Library::load()
     {
         return read_object(path_of(what)).value(QLatin1String(key)).toArray().toVariantList();
     };
-    liked_songs.set_tracks(list(LIKED, "tracks"));
-    history_songs.set_tracks(list(HISTORY, "tracks"));
-    hidden_songs.set_tracks(list(HIDDEN, "tracks"));
+    liked_songs.set_all(songs_of(list(LIKED, "tracks")));
+    history_songs.set_all(songs_of(list(HISTORY, "tracks")));
+    hidden_songs.set_all(songs_of(list(HIDDEN, "tracks")));
     saved_albums.set_cards(list(ALBUMS, "albums"));
     saved_artists.set_cards(list(ARTISTS, "artists"));
     rebuild_liked_ids();
@@ -396,7 +413,7 @@ void Library::load_playlists()
         const QString id = QFileInfo(file).completeBaseName();
         const QString name = object.value(QStringLiteral("name")).toString(id);
         TrackModel *tracks = playlist_list.add(id, name);
-        tracks->set_tracks(object.value(QStringLiteral("tracks")).toArray().toVariantList());
+        tracks->set_all(songs_of(object.value(QStringLiteral("tracks")).toArray().toVariantList()));
     }
 }
 
